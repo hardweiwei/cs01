@@ -1,13 +1,21 @@
 from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
 
-class TicketCreate(BaseModel):
+class TicketBase(BaseModel):
     title: str
-    description: str
+    description: Optional[str] = None
     user_id: str
+    status: Optional[str] = "open"  # open, in_progress, closed
 
-class TicketOut(TicketCreate):
+class TicketCreate(TicketBase):
+    pass
+
+class TicketOut(TicketBase):
     id: int
-    status: str
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         orm_mode = True
+

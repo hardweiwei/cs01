@@ -4,12 +4,14 @@ from models import Base, Ticket
 from database import engine, SessionLocal
 from schemas import TicketCreate, TicketOut
 from crud import create_ticket, get_tickets_by_user, get_ticket_by_id
+from typing import List
 
+# 创建数据库表
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# 允许跨域
+# 允许跨域访问
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,25 +19,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 新建工单
 @app.post("/tickets/", response_model=TicketOut)
 def create(ticket: TicketCreate):
     db = SessionLocal()
-    db_ticket = create_ticket(db, ticket)
-    db.close()
-    return db_ticket
+    try:
+        db_ticket = create_ticket(db, ticket)
+        return db_ticket
+    finally:
+        db.close()
 
-@app.get("/tickets/", response_model=list[TicketOut])
+# 查询某个用户的工单列表
+@app.get("/tickets/", response_model=List[TicketOut])
 def list(user_id: str):
     db = SessionLocal()
-    tickets = get_tickets_by_user(db, user_id)
-    db.close()
-    return tickets
+    try:
+        tickets = get_tickets_by_user(db, user_id)
+        return tickets
+    finally:
+        db.close()
 
+# 查询单个工单详情
 @app.get("/tickets/{ticket_id}", response_model=TicketOut)
 def detail(ticket_id: int):
     db = SessionLocal()
-    ticket = get_ticket_by_id(db, ticket_id)
-    db.close()
-    if ticket is None:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    return ticket
+    try:
+        ticket = get_ticket_by_id(db, ticket_id)
+        if ticket is None:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        return ticket
+    finally:
+        db.close()
+
